@@ -1,6 +1,7 @@
 {
   "dependencies": {
     "com.berkcankarabulut.guid": "https://github.com/berkcankarabulut/Guid.git",
+    "com.cysharp.unitask": "https://github.com/Cysharp/UniTask.git?path=src/UniTask/Assets/Plugins/UniTask",
     "com.unity.ai.navigation": "2.0.4",
     "com.unity.collab-proxy": "2.8.2",
     "com.unity.ide.rider": "3.0.31",

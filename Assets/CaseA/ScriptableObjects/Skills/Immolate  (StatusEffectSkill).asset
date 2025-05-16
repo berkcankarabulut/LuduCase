@@ -17,5 +17,5 @@ MonoBehaviour:
   _icon: {fileID: 0}
   _damageType: {fileID: 11400000, guid: 2ebd19425e2845345b98731390644330, type: 2}
   _damagePerTick: 4
-  _effectDuration: 5
+  _effectDuration: 6
   _tickInterval: 0.5

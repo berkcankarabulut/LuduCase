@@ -1,5 +1,7 @@
-using System.Collections;
+using System; 
+using System.Threading;
 using CaseA.Health.Runtime;
+using Cysharp.Threading.Tasks;
 using UnityEngine;
 
 namespace CaseA.Character.Runtime
@@ -9,7 +11,7 @@ namespace CaseA.Character.Runtime
         private float _regenerationRate = 0f;
 
         private HealthSystem _healthSystem;
-        private Coroutine _regenerationCoroutine; 
+        private CancellationTokenSource _regenerationCts;
         private const float REGEN_TICK_INTERVAL = 0.5f; 
 
         public RegenerationSystem(HealthSystem healthSystem)
@@ -23,15 +25,17 @@ namespace CaseA.Character.Runtime
             StopRegeneration();
             if (_regenerationRate > 0 && _healthSystem != null)
             {
-                _regenerationCoroutine = _healthSystem.StartCoroutine(RegenerationRoutine());
+                _regenerationCts = new CancellationTokenSource();
+                RegenerationRoutine(_regenerationCts.Token).Forget();
             }
         }
 
         public void StopRegeneration()
         {
-            if (_regenerationCoroutine == null) return;
-            _healthSystem.StopCoroutine(_regenerationCoroutine);
-            _regenerationCoroutine = null;
+            if (_regenerationCts == null) return;
+            _regenerationCts.Cancel();
+            _regenerationCts.Dispose();
+            _regenerationCts = null;
         }
 
         public void ModifyRegenerationRate(float amount)
@@ -40,25 +44,30 @@ namespace CaseA.Character.Runtime
             StartRegeneration();
         }
 
-        private IEnumerator RegenerationRoutine()
+        private async UniTaskVoid RegenerationRoutine(CancellationToken cancellationToken)
         {
-            while (_regenerationRate > 0 && _healthSystem != null)
+            try
             {
-                yield return new WaitForSeconds(REGEN_TICK_INTERVAL);
-
-                if (_healthSystem.CurrentHealth < _healthSystem.MaxHealth)
+                while (_regenerationRate > 0 && _healthSystem != null && !cancellationToken.IsCancellationRequested)
                 {
-                    float healAmount = _regenerationRate * REGEN_TICK_INTERVAL;
-                    _healthSystem.Heal(healAmount, null);
-                }
+                    await UniTask.Delay(System.TimeSpan.FromSeconds(REGEN_TICK_INTERVAL), cancellationToken: cancellationToken);
 
-                if (_regenerationRate <= 0)
-                {
-                    break;
+                    if (_healthSystem.CurrentHealth < _healthSystem.MaxHealth)
+                    {
+                        float healAmount = _regenerationRate * REGEN_TICK_INTERVAL;
+                        _healthSystem.Heal(healAmount, null);
+                    }
+
+                    if (_regenerationRate <= 0)
+                    {
+                        break;
+                    }
                 }
             }
-
-            _regenerationCoroutine = null;
+            catch (OperationCanceledException)
+            {
+                
+            }
         }
     }
 }
